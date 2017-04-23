@@ -90,7 +90,7 @@ cars = cars[0:sample_size]
 notcars = notcars[0:sample_size]
 
 ### TODO: Tweak these parameters and see how the results change.
-colorspace = 'RGB' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+colorspace = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 orient = 9
 pix_per_cell = 8
 cell_per_block = 2

@@ -25,7 +25,7 @@ cell_per_block = dist_pickle["cell_per_block"]
 #
 #feature_array = hog(img, orientations=orient, pixels_per_cell=(pix_per_cell, pix_per_cell), cells_per_block=(cell_per_block, cell_per_block), visualise=False, feature_vector=False)
 
-img = mpimg.imread('test_images/test1.jpg')
+img = mpimg.imread('test_images/test6.jpg')
 
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
