@@ -9,6 +9,9 @@ import numpy as np
 import pickle
 import cv2
 from lesson_functions import *
+# Import everything needed to edit/save/watch video clips
+from moviepy.editor import VideoFileClip
+#from IPython.display import HTML
 
 dist_pickle = pickle.load( open("svc_pickle.p", "rb" ) )
 svc = dist_pickle["svc"]
@@ -16,17 +19,6 @@ X_scaler = dist_pickle["X_scaler"]
 orient = dist_pickle["orient"]
 pix_per_cell = dist_pickle["pix_per_cell"]
 cell_per_block = dist_pickle["cell_per_block"]
-
-
-#from skimage.feature import hog
-#orient = 9
-#pix_per_cell = 8
-#cell_per_block = 2
-#
-#feature_array = hog(img, orientations=orient, pixels_per_cell=(pix_per_cell, pix_per_cell), cells_per_block=(cell_per_block, cell_per_block), visualise=False, feature_vector=False)
-
-img = mpimg.imread('test_images/test6.jpg')
-
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
 def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block):
@@ -95,14 +87,26 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
 
     return draw_img
 
+def pipeline(img):
+    ystart = 400
+    ystop = 656
+    scale = 1.5
+    out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block)
+    return out_img
 
-ystart = 400
-ystop = 656
-scale = 1.5
 
-#out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
-                    #hist_bins)
-out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block)
 
-plt.imshow(out_img)
-plt.show()
+UseStillImage = False
+
+if UseStillImage:
+
+    img = mpimg.imread('test_images/test6.jpg')
+    #out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
+    out_img=pipeline(img)
+    plt.imshow(out_img)
+    plt.show()
+
+else:
+    input_clip = VideoFileClip('test_video.mp4')
+    output_clip = input_clip.fl_image(pipeline)
+    output_clip.write_videofile('output.mp4', audio=False)
