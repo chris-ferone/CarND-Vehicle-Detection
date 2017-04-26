@@ -11,7 +11,7 @@ import cv2
 from lesson_functions import *
 # Import everything needed to edit/save/watch video clips
 from moviepy.editor import VideoFileClip
-#from IPython.display import HTML
+from heat_map import *
 
 dist_pickle = pickle.load( open("svc_pickle.p", "rb" ) )
 svc = dist_pickle["svc"]
@@ -82,31 +82,71 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
                 xbox_left = np.int(xleft * scale)
                 ytop_draw = np.int(ytop * scale)
                 win_draw = np.int(window * scale)
-                cv2.rectangle(draw_img, (xbox_left, ytop_draw + ystart),
-                              (xbox_left + win_draw, ytop_draw + win_draw + ystart), (0, 0, 255), 6)
+                x1 = xbox_left
+                y1 = ytop_draw + ystart
+                x2 = xbox_left + win_draw
+                y2 = ytop_draw + win_draw + ystart
+                cv2.rectangle(draw_img, (x1, y1), (x2, y2), (0, 0, 255), 6)
+                box_list.append(((x1, y1), (x2, y2)))
 
-    return draw_img
+    return draw_img, box_list
 
 def pipeline(img):
     ystart = 400
     ystop = 656
     scale = 1.5
-    out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block)
-    return out_img
+    [out_img, box_list] = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block)
+
+    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    # Add heat to each box in box list
+    heat = add_heat(heat, box_list)
+
+    # Apply threshold to help remove false positives
+    heat = apply_threshold(heat, 1)
+
+    # Visualize the heatmap when displaying
+    heatmap = np.clip(heat, 0, 255)
+
+    # Find final boxes from heatmap using label function
+    labels = label(heatmap)
+    #print(labels[1], 'cars found')
+    draw_img = draw_labeled_bboxes(np.copy(img), labels)
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(132)
+    a1=ax1.imshow(draw_img)
+    #fig.colorbar(a1)
+    ax1.set_title('Car Positions')
+    ax2 = fig.add_subplot(133)
+    ax2.imshow(heatmap, cmap='hot')
+    ax2.set_title('Heat Map')
+    ax3 = fig.add_subplot(131)
+    ax3.imshow(out_img, cmap='hot')
+    ax3.set_title('Original')
+    fig.tight_layout()
+    #if UseStillImage == False:
+    #draw_img = cv2.cvtColor(draw_img, cv2.COLOR_RGB2BGR)
+
+    return draw_img
 
 
 
-UseStillImage = False
+UseStillImage = True
+box_list = []
 
 if UseStillImage:
 
-    img = mpimg.imread('test_images/test6.jpg')
+    img = mpimg.imread('frames/frame990.jpg')
     #out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
     out_img=pipeline(img)
+    fig = plt.figure()
     plt.imshow(out_img)
+
+
+
     plt.show()
 
 else:
-    input_clip = VideoFileClip('test_video.mp4')
+    input_clip = VideoFileClip('project_video.mp4').subclip(38,42)
     output_clip = input_clip.fl_image(pipeline)
     output_clip.write_videofile('output.mp4', audio=False)
