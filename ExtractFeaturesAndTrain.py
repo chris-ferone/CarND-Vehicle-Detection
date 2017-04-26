@@ -7,6 +7,7 @@ import time
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 from skimage.feature import hog
+from lesson_functions import *
 # NOTE: the next import is only valid for scikit-learn version <= 0.17
 # for scikit-learn >= 0.18 use:
 from sklearn.model_selection import train_test_split
@@ -32,13 +33,14 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block,
 # Define a function to extract features from a list of images
 # Have this function call bin_spatial() and color_hist()
 def extract_features(imgs, cspace='RGB', orient=9,
-                        pix_per_cell=8, cell_per_block=2, hog_channel=0):
+                        pix_per_cell=8, cell_per_block=2, hog_channel=0, spatial_size=(32, 32), hist_bins=32):
     # Create a list to append feature vectors to
     features = []
     # Iterate through the list of images
     for file in imgs:
         # Read in each one by one
         image = mpimg.imread(file)
+        image = cv2.resize(image, (64, 64))
         # apply color conversion if other than 'RGB'
         if cspace != 'RGB':
             if cspace == 'HSV':
@@ -64,8 +66,15 @@ def extract_features(imgs, cspace='RGB', orient=9,
         else:
             hog_features = get_hog_features(feature_image[:,:,hog_channel], orient,
                         pix_per_cell, cell_per_block, vis=False, feature_vec=True)
+        # Apply bin_spatial() to get spatial color features
+        spatial_features = bin_spatial(feature_image, size=spatial_size)
+
+        # Apply color_hist() to get color histogram features
+        hist_features = color_hist(feature_image, nbins=hist_bins)
+
+
         # Append the new feature vector to the features list
-        features.append(hog_features)
+        features.append(np.hstack((hog_features, spatial_features, hist_features)))
     # Return list of feature vectors
     return features
 

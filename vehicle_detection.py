@@ -21,10 +21,10 @@ pix_per_cell = dist_pickle["pix_per_cell"]
 cell_per_block = dist_pickle["cell_per_block"]
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
-def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block):
+def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size = (32, 32), hist_bins = 32):
     draw_img = np.copy(img)
     img = img.astype(np.float32) / 255
-
+    box_list = []
     img_tosearch = img[ystart:ystop, :, :]
     ctrans_tosearch = convert_color(img_tosearch, conv='RGB2YCrCb')
     if scale != 1:
@@ -68,14 +68,11 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
             subimg = cv2.resize(ctrans_tosearch[ytop:ytop + window, xleft:xleft + window], (64, 64))
 
             # Get color features
-            #spatial_features = bin_spatial(subimg, size=spatial_size)
-            #hist_features = color_hist(subimg, nbins=hist_bins)
+            spatial_features = bin_spatial(subimg, size=spatial_size)
+            hist_features = color_hist(subimg, nbins=hist_bins)
 
             # Scale features and make a prediction
-            test_features = X_scaler.transform(hog_features)
-                #np.hstack((spatial_features, hist_features, hog_features)).reshape(1, -1))
-
-            # test_features = X_scaler.transform(np.hstack((shape_feat, hist_feat)).reshape(1, -1))
+            test_features = X_scaler.transform(np.hstack((hog_features, spatial_features, hist_features)).reshape(1, -1))
             test_prediction = svc.predict(test_features)
 
             if test_prediction == 1:
@@ -96,36 +93,41 @@ def pipeline(img):
     ystop = 656
     scale = 1.5
     [out_img, box_list] = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block)
+    print("box list: ", len(box_list))
+    if len(box_list) > 0:
+        heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+        # Add heat to each box in box list
+        heat = add_heat(heat, box_list)
 
-    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-    # Add heat to each box in box list
-    heat = add_heat(heat, box_list)
+        # Apply threshold to help remove false positives
+        heat = apply_threshold(heat, 2)
 
-    # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 1)
+        # Visualize the heatmap when displaying
+        heatmap = np.clip(heat, 0, 255)
 
-    # Visualize the heatmap when displaying
-    heatmap = np.clip(heat, 0, 255)
+        # Find final boxes from heatmap using label function
+        labels = label(heatmap)
+        #print(labels[1], 'cars found')
+        draw_img = draw_labeled_bboxes(np.copy(img), labels)
+        print("labels: ", labels[1])
 
-    # Find final boxes from heatmap using label function
-    labels = label(heatmap)
-    #print(labels[1], 'cars found')
-    draw_img = draw_labeled_bboxes(np.copy(img), labels)
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot(132)
-    a1=ax1.imshow(draw_img)
-    #fig.colorbar(a1)
-    ax1.set_title('Car Positions')
-    ax2 = fig.add_subplot(133)
-    ax2.imshow(heatmap, cmap='hot')
-    ax2.set_title('Heat Map')
-    ax3 = fig.add_subplot(131)
-    ax3.imshow(out_img, cmap='hot')
-    ax3.set_title('Original')
-    fig.tight_layout()
-    #if UseStillImage == False:
-    #draw_img = cv2.cvtColor(draw_img, cv2.COLOR_RGB2BGR)
+        fig = plt.figure()
+        ax1 = fig.add_subplot(132)
+        a1=ax1.imshow(draw_img)
+        #fig.colorbar(a1)
+        ax1.set_title('Car Positions')
+        ax2 = fig.add_subplot(133)
+        ax2.imshow(heatmap, cmap='hot')
+        ax2.set_title('Heat Map')
+        ax3 = fig.add_subplot(131)
+        ax3.imshow(out_img, cmap='hot')
+        ax3.set_title('Original')
+        fig.tight_layout()
+    else:
+        draw_img = img
+        print("no vehicles detected")
+
 
     return draw_img
 
