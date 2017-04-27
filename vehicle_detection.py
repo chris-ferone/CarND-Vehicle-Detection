@@ -89,9 +89,9 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     return draw_img, box_list
 
 def pipeline(img):
-    ystart_array = [350, 400]
-    ystop_array =  [656, 550]
-    scale_array =  [2, 1.5]
+    ystart_array = [400, 400, 400]
+    ystop_array =  [800, 600, 500]
+    scale_array =  [2,   1.5, 1.2]
     #scale should increase towards bottom of image y => 720 because images are larger, and scale should decrease at top of image y => 0
 
     combined_boxlist = []
@@ -120,16 +120,17 @@ def pipeline(img):
 
 
         fig = plt.figure()
-        ax1 = fig.add_subplot(132)
-        a1=ax1.imshow(draw_img)
-        #fig.colorbar(a1)
-        ax1.set_title('Car Positions')
-        ax2 = fig.add_subplot(133)
-        ax2.imshow(heatmap, cmap='hot')
-        ax2.set_title('Heat Map')
-        ax3 = fig.add_subplot(131)
-        ax3.imshow(out_img, cmap='hot')
-        ax3.set_title('Original')
+        #ax1 = fig.add_subplot(111)
+        #a1=ax1.imshow(draw_img)
+        # #fig.colorbar(a1)
+        # ax1.set_title('Final Car Positions')
+        # ax2 = fig.add_subplot(312)
+        # ax2.imshow(heatmap, cmap='hot')
+        # ax2.set_title('Heat Map')
+        ax3 = fig.add_subplot(111)
+        box_img = draw_boxes2(np.copy(img), combined_boxlist)
+        ax3.imshow(box_img, cmap='hot')
+        # ax3.set_title('Original')
         fig.tight_layout()
     else:
         draw_img = img
@@ -140,12 +141,12 @@ def pipeline(img):
 
 
 
-UseStillImage = False
+UseStillImage = True
 box_list = []
 
 if UseStillImage:
 
-    img = mpimg.imread('frames/frame1018.jpg')
+    img = mpimg.imread('frames/frame934.jpg')
     #out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
     out_img=pipeline(img)
     fig = plt.figure()
@@ -156,6 +157,6 @@ if UseStillImage:
     plt.show()
 
 else:
-    input_clip = VideoFileClip('project_video.mp4')# .subclip(38,42)
+    input_clip = VideoFileClip('project_video.mp4')#.subclip(38,42)
     output_clip = input_clip.fl_image(pipeline)
     output_clip.write_videofile('output.mp4', audio=False)

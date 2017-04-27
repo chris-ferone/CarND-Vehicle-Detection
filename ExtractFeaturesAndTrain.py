@@ -57,14 +57,26 @@ def extract_features(imgs, cspace='RGB', orient=9,
             elif cspace == 'YCrCb':
                 feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
         else: feature_image = np.copy(image)
-
+        fig = plt.figure()
+        ax1 = fig.add_subplot(121)
+        ax1.imshow(image)
+        ax1.set_title('original')
+        ax2 = fig.add_subplot(122)
+        ax2.set_title('post color conversion')
+        ax2.imshow(feature_image, cmap='gray')
+        plt.show()
         # Call get_hog_features() with vis=False, feature_vec=True
         if hog_channel == 'ALL':
             hog_features = []
             for channel in range(feature_image.shape[2]):
-                hog_features.append(get_hog_features(feature_image[:,:,channel],
-                                    orient, pix_per_cell, cell_per_block,
-                                    vis=False, feature_vec=True))
+                tempfeatures, hog_image = get_hog_features(feature_image[:, :, channel], orient, pix_per_cell, cell_per_block,
+                                 vis=True, feature_vec=True)
+                hog_features.append(tempfeatures)
+                fig = plt.figure()
+                ax2 = fig.add_subplot(111)
+                ax2.set_title('Hog')
+                ax2.imshow(hog_image, cmap='gray')
+                plt.show()
             hog_features = np.ravel(hog_features)
         else:
             hog_features = get_hog_features(feature_image[:,:,hog_channel], orient,
@@ -83,25 +95,23 @@ def extract_features(imgs, cspace='RGB', orient=9,
 
 
 # Divide up into cars and notcars
-
-# images = glob.glob('*.jpeg')
-# cars = []
-# notcars = []
-# for image in images:
-#     if 'image' in image or 'extra' in image:
-#         notcars.append(image)
-#     else:
-#         cars.append
 cars = glob.glob('vehicles\\*\\*.png')
 notcars = glob.glob('non-vehicles\\*\\*.png')
 
 # Reduce the sample size because HOG features are slow to compute
-# The quiz evaluator times out after 13s of CPU time
 sample_size = 2876 #@ 2876 there is a bad image!!!
 cars = cars[0:2875]
 notcars = notcars[0:2875]  #[0:sample_size]
 
-### TODO: Tweak these parameters and see how the results change.
+# fig = plt.figure()
+# ax1 = fig.add_subplot(121)
+# ax1.imshow(mpimg.imread(cars[334]))
+# ax1.set_title('Car')
+# ax2 = fig.add_subplot(122)
+# ax2.set_title('Not Car')
+# ax2.imshow(mpimg.imread(notcars[334]))
+# plt.show()
+
 colorspace = 'YUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 orient = 11
 pix_per_cell = 8

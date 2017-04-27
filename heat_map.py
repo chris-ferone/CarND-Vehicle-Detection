@@ -49,3 +49,8 @@ def draw_labeled_bboxes(img, labels):
     return img
 
 
+def draw_boxes2(img, bboxes):
+    for i in range(0, len(bboxes)):
+        box=bboxes[i]
+        cv2.rectangle(img, box[0], box[1], (0, 0, 255), 6)
+    return img
