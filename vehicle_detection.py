@@ -26,7 +26,7 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     img = img.astype(np.float32) / 255
     box_list = []
     img_tosearch = img[ystart:ystop, :, :]
-    ctrans_tosearch = convert_color(img_tosearch, conv='RGB2YCrCb')
+    ctrans_tosearch = convert_color(img_tosearch, conv='RGB2YUV')
     if scale != 1:
         imshape = ctrans_tosearch.shape
         ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1] / scale), np.int(imshape[0] / scale)))
@@ -89,18 +89,25 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     return draw_img, box_list
 
 def pipeline(img):
-    ystart = 400
-    ystop = 656
-    scale = 1.5
-    [out_img, box_list] = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block)
-    print("box list: ", len(box_list))
-    if len(box_list) > 0:
+    ystart_array = [350, 400]
+    ystop_array =  [656, 550]
+    scale_array =  [2, 1.5]
+    #scale should increase towards bottom of image y => 720 because images are larger, and scale should decrease at top of image y => 0
+
+    combined_boxlist = []
+    for i in range(0, len(ystart_array)):
+        [out_img, box_list] = find_cars(img, ystart_array[i], ystop_array[i], scale_array[i], svc, X_scaler, orient, pix_per_cell, cell_per_block)
+        #plt.imshow(out_img)
+        #plt.show()
+        combined_boxlist.extend(box_list)
+
+    if len(combined_boxlist) > 0:
         heat = np.zeros_like(img[:, :, 0]).astype(np.float)
         # Add heat to each box in box list
-        heat = add_heat(heat, box_list)
+        heat = add_heat(heat, combined_boxlist)
 
         # Apply threshold to help remove false positives
-        heat = apply_threshold(heat, 2)
+        heat = apply_threshold(heat, 1)
 
         # Visualize the heatmap when displaying
         heatmap = np.clip(heat, 0, 255)
@@ -109,7 +116,7 @@ def pipeline(img):
         labels = label(heatmap)
         #print(labels[1], 'cars found')
         draw_img = draw_labeled_bboxes(np.copy(img), labels)
-        print("labels: ", labels[1])
+        #print("labels: ", labels[1])
 
 
         fig = plt.figure()
@@ -126,19 +133,19 @@ def pipeline(img):
         fig.tight_layout()
     else:
         draw_img = img
-        print("no vehicles detected")
+        #print("no vehicles detected")
 
 
     return draw_img
 
 
 
-UseStillImage = True
+UseStillImage = False
 box_list = []
 
 if UseStillImage:
 
-    img = mpimg.imread('frames/frame990.jpg')
+    img = mpimg.imread('frames/frame1018.jpg')
     #out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
     out_img=pipeline(img)
     fig = plt.figure()
@@ -149,6 +156,6 @@ if UseStillImage:
     plt.show()
 
 else:
-    input_clip = VideoFileClip('project_video.mp4').subclip(38,42)
+    input_clip = VideoFileClip('project_video.mp4')# .subclip(38,42)
     output_clip = input_clip.fl_image(pipeline)
     output_clip.write_videofile('output.mp4', audio=False)

@@ -2,7 +2,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-import glob2
+import glob
 import time
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
@@ -40,6 +40,9 @@ def extract_features(imgs, cspace='RGB', orient=9,
     for file in imgs:
         # Read in each one by one
         image = mpimg.imread(file)
+        if image is None:
+            print("file: ", file)
+            assert image is not None
         image = cv2.resize(image, (64, 64))
         # apply color conversion if other than 'RGB'
         if cspace != 'RGB':
@@ -89,18 +92,18 @@ def extract_features(imgs, cspace='RGB', orient=9,
 #         notcars.append(image)
 #     else:
 #         cars.append
-cars = glob2.glob('vehicles\\**\\*.png')
-notcars = glob2.glob('non-vehicles\\**\\*.png')
+cars = glob.glob('vehicles\\*\\*.png')
+notcars = glob.glob('non-vehicles\\*\\*.png')
 
 # Reduce the sample size because HOG features are slow to compute
 # The quiz evaluator times out after 13s of CPU time
-sample_size = 500
-cars = cars[0:sample_size]
-notcars = notcars[0:sample_size]
+sample_size = 2876 #@ 2876 there is a bad image!!!
+cars = cars[0:2875]
+notcars = notcars[0:2875]  #[0:sample_size]
 
 ### TODO: Tweak these parameters and see how the results change.
-colorspace = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-orient = 9
+colorspace = 'YUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+orient = 11
 pix_per_cell = 8
 cell_per_block = 2
 hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
@@ -150,4 +153,5 @@ print('For these',n_predict, 'labels: ', y_test[0:n_predict])
 t2 = time.time()
 print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 
-pickle.dump( {"svc": svc, "X_scaler": X_scaler, "orient": orient, "cell_per_block": cell_per_block, "pix_per_cell":pix_per_cell}, open( "svc_pickle.p", "wb" ) )
+pickle.dump( {"svc": svc, "X_scaler": X_scaler, "orient": orient, "cell_per_block": cell_per_block,
+              "pix_per_cell":pix_per_cell, "colorspace":colorspace}, open( "svc_pickle.p", "wb" ) )
